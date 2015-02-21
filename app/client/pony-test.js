@@ -31,10 +31,11 @@ Pony.Stage.prototype.init = function(canvas) {
 };
 
 Pony.Stage.prototype.addChild = function(child) {
-	this.children.unshift(child);
-	
+	this.children.push(child);
+
 	if (child.stage !== this) {
 		child.setStage(this);
+		console.log(5, child.image.src);
 	}
 };
 
@@ -55,43 +56,90 @@ Pony.Point = function(x, y) {
 	this.y = y || 0;
 };
 
-Pony.Sprite = function(image, x, y) {
+Pony.GameObject = function(anchor) {
+
+};
+
+Pony.GameObject.prototype = Object.create(Pony.GameObject.prototype);
+Pony.GameObject.constructor = Pony.GameObject;
+
+Pony.Texture = function(path, x, y) {
 	this.anchor = new Pony.Point(x, y);
 	this.hasLoaded = false;
-	var that = this;
-	image.onload = function() {
-		that.width = image.width;
-		that.height = image.height;
-		that.image = image;
-		that.hasLoaded = true;
-		that.onLoaded();
-		console.log(2);
+	var self = this;
+	this.image = new Image();
+	this.image.onload = function() {
+		self.width = self.image.width;
+		self.height = self.image.height;
+		self.hasLoaded = true;
+		self.onLoaded();
 	};
+	this.image.src = path;
 };
 
-Pony.Sprite.prototype = Object.create(Pony.Sprite.prototype);
-Pony.Sprite.prototype.constructor = Pony.Sprite;
+Pony.Texture.prototype = Object.create(Pony.Texture.prototype);
+Pony.Texture.prototype.constructor = Pony.Texture;
 
-Pony.Sprite.prototype.onLoaded = function() {
-	console.log(3, this.image.src);
+Pony.Texture.prototype.onLoaded = function() {
+	this.path = this.image.src;
+	var event = new CustomEvent("imageLoaded", {"detail": {"path" : this.image.src}});
+	document.dispatchEvent(event);
+	if (this.stage !== undefined) {
 		this.update();
-		console.log(4, this.image.src);
+	}
 };
 
-Pony.Sprite.prototype.setStage = function(stage) {
+Pony.Texture.prototype.setStage = function(stage) {
 	if (stage instanceof Pony.Stage) {
 		this.stage = stage;
 	}
 };
 
-Pony.Sprite.prototype.update = function() {
+Pony.Texture.prototype.update = function() {
 	if (this.stage !== undefined) {
+		console.log(this.image.src);
 		this.stage.ctx.drawImage(this.image, this.anchor.x, this.anchor.y);
-	}	
+	}
 };
 
-Pony.Sprite.animate = function() {
+Pony.Texture.animate = function() {
 	requestAnimFrame();
 	this.stage.ctx.clearRect(this.anchor.x, this.anchor.y, this.width, this.height);
 	this.update();
+};
+
+Pony.Spritesheet = function(path, frameWidth, frameHeight, anchor) {
+	this.currentFrame = 0;
+	this.framesPerRow = 0;
+	this.frameWidth = frameWidth;
+	this.frameHeight = frameHeight;
+	this.fps = 1;
+	this.animationPool = {};
+	this.achor = anchor || new Pony.Point();
+	this.texture = new Pony.Texture(path);
+	document.addEventListener("imageLoaded", this.onLoaded.bind(this), false);
+};
+
+Pony.Spritesheet.prototype = Object.create(Pony.Spritesheet.prototype);
+Pony.Spritesheet.prototype.constructor = Pony.Spritesheet;
+
+Pony.Spritesheet.prototype.onLoaded = function(e) {
+	if (e.detail.path == this.texture.path) {
+		this.width = this.texture.width;
+		this.heigth = this.texture.height;
+		this.hasLoaded = true;
+		this.framesPerRow = Math.floor(this.width / this.frameWidth);
+	}
+};
+
+Pony.Spritesheet.prototype.update = function() {
+
+};
+
+Pony.Spritesheet.prototype.attachAnimation = function(key, frames) {
+	this.animationPool[key] = frames;
+};
+
+Pony.Spritesheet.prototype.runAnimation = function(key) {
+
 };
