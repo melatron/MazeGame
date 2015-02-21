@@ -41,24 +41,37 @@ function startGame() {
 	player = new createjs.Sprite(spriteSheet);
 	player.isIdle = true;
 	player.up = function(delta) {
-		this.y -= 150 * delta / 1000;
+		if (this.y <= 0) {
+			return;
+		}
+		var dt = 150 * delta / 1000;
+		this.y -= dt;
 		if (this.currentAnimation != "up") {
 			this.gotoAndPlay("up");
 		}
 	};
 	player.down = function(delta) {
+		if (this.y + this.getBounds().height >= height) {
+			return;
+		}
 		this.y += 150 * delta / 1000;
 		if (this.currentAnimation != "down") {
 			this.gotoAndPlay("down");
 		}
 	};
 	player.left = function(delta) {
+		if (this.x <= 0) {
+			return;
+		}
 		this.x -= 150 * delta / 1000;
 		if (this.currentAnimation != "left") {
 			this.gotoAndPlay("left");
 		}
 	};
 	player.right = function(delta) {
+		if (this.x + this.getBounds().width >= width) {
+			return;
+		}
 		this.x += 150 * delta / 1000;
 		if (this.currentAnimation != "right") {
 			this.gotoAndPlay("right");
