@@ -32,12 +32,7 @@ function startGame() {
     player = new createjs.Sprite(spriteSheet);
     player.isIdle = true;
     player.up = function(delta) {
-    	dt = 150 * delta / 1000;
-    	console.log(this.y);
-    	if (this.x + this.getBounds().height >= height) {
-    		return;
-    	}
-    	this.y -= dt;
+    	this.y -= 150 * delta / 1000;
     	this.gotoAndPlay("up");
     };
     player.down = function(delta) {
