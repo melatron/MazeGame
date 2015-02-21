@@ -2,3 +2,5 @@
 *.xml
 *.iml
 node_modules/*
+*.project
+*.prefs
