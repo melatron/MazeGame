@@ -1,6 +1,6 @@
 *.name
 *.xml
 *.iml
-node_modules/*
+node_modules
 *.project
 *.prefs
