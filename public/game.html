@@ -3,11 +3,13 @@
 <head lang="en">
     <meta charset="UTF-8">
     <title>MazeGame</title>
-	<script src="../app/client/pony-test.js"></script>
+    <script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+	<script src="assets/js/keymaster.js"></script>
+	<script src="https://code.createjs.com/createjs-2014.12.12.min.js"></script>
+	<!-- <script src="../app/client/pony-test.js"></script> -->
+	<script src="../game.js"></script>
 </head>
-<body>
-	<script>
-		var c = new Pony.Stage(800, 600);
-	</script>
+<body onload="init();">
+	<canvas id="game-container" width="800" height="600"></canvas>
 </body>
 </html>
