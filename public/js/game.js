@@ -3,8 +3,6 @@
  */
 var Game = (function () {
     function init() {
-    	var socket = io.connect();
-    	console.log(socket);
         stage = new createjs.Stage("game-container");
         fps = 30;
         width = stage.canvas.width;
@@ -43,7 +41,7 @@ var Game = (function () {
         	// var g = new createjs.Shape().graphics.beginFill("#fff").drawRect(0, 0, 200, 50);
         	// stage.addChild(g);
         // }
-        poolOfPlayers.push(player);
+        // poolOfPlayersplayer;
         stage.addChild(player.sprite);
         createjs.Ticker.timingMode = createjs.Ticker.RAF;
         createjs.Ticker.setFPS(fps);
@@ -127,6 +125,7 @@ var Game = (function () {
     	sprite.y = y;
     	var player = new Player(sprite);
         stage.addChild(player.sprite);
+        return player;
     }
     
     function killPlayer() {
@@ -139,6 +138,7 @@ var Game = (function () {
     
     function update(params) {
     	params.forEach(function(p) {
+    		var id = p.id;
     		poolOfPlayers.id.x = p.x;
     		poolOfPlayers.id.y = p.y;
     	});
@@ -179,8 +179,9 @@ $(function () {
     
     socket.on('new', function(params) {
     	var x = params.x || 0;
-    	var y = params.y || height / 2; 
-    	Game.addPlayer();
+    	var y = params.y || height / 2;
+    	var player = Game.addPlayer();
+    	poolOfPlayers.params.id = {'x' : player.x, 'y' : player.y};
     });
     
     socket.on('death', function(params) {
