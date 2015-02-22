@@ -7,7 +7,7 @@ function init() {
 	width = stage.canvas.width;
 	height = stage.canvas.height;
 	manifest = [
-		{src: "tile3.png", id: "tilemap"},
+		{src: "sea_background.png", id: "background"},
 		{src: "ada_0_0.png", id: "char"}
 	];
 	loader = new createjs.LoadQueue(false);
@@ -16,8 +16,22 @@ function init() {
 }
 
 function startGame() {
+	//setup background
+	var background = new createjs.Shape();
+	var matrix = new createjs.Matrix2D();
+	worldHeight = height;
+	worldWidth = width * 2;
+	worldTraveled = 0;
+	matrix.scale(2, 2);
+	matrix.translate(0, height / 4);
+	world = new createjs.Container(); //make a container for our panning world view
+	background.graphics.beginFill("#5DD2FF").drawRect(0, 0, worldWidth, worldHeight); //first fill with color
+	background.graphics.beginBitmapFill(loader.getResult("background"), "repeat-x", matrix).drawRect(0, 0, worldWidth, worldHeight);
+	world.x = world.y = 0;
+	world.addChild(background);
+	stage.addChild(world);
 	var spriteSheet = new createjs.SpriteSheet({
-		framerate: 1,
+		framerate: 10,
 		"images": [loader.getResult("char")],
 		"frames": {"regX": 0, "height": 48, "regY": 0, "width": 48},
 		"animations": {
@@ -33,76 +47,50 @@ function startGame() {
 			"right": {
 				"frames" : [3, 7, 11, 15]
 			},
-			"idle" : 0
+			"idleL" : 1,
+			"idleR" : 3
 		}
 	});
-	var background = new createjs.Bitmap(loader.getResult("tilemap"));
-	stage.addChild(background);
-	player = new createjs.Sprite(spriteSheet);
-	player.isIdle = true;
-	player.up = function(delta) {
-		if (this.y <= 0) {
-			return;
-		}
-		var dt = 150 * delta / 1000;
-		this.y -= dt;
-		if (this.currentAnimation != "up") {
-			this.gotoAndPlay("up");
-		}
-	};
-	player.down = function(delta) {
-		if (this.y + this.getBounds().height >= height) {
-			return;
-		}
-		this.y += 150 * delta / 1000;
-		if (this.currentAnimation != "down") {
-			this.gotoAndPlay("down");
-		}
-	};
-	player.left = function(delta) {
-		if (this.x <= 0) {
-			return;
-		}
-		this.x -= 150 * delta / 1000;
-		if (this.currentAnimation != "left") {
-			this.gotoAndPlay("left");
-		}
-	};
-	player.right = function(delta) {
-		if (this.x + this.getBounds().width >= width) {
-			return;
-		}
-		this.x += 150 * delta / 1000;
-		if (this.currentAnimation != "right") {
-			this.gotoAndPlay("right");
-		}
-	};
-	stage.addChild(player);
-
+	
+	//initiate the player
+	var sprite = new createjs.Sprite(spriteSheet);
+	sprite.x = 0;
+	sprite.y = height / 2;
+	player = new Player(sprite);
+	stage.addChild(player.sprite);
 	createjs.Ticker.timingMode = createjs.Ticker.RAF;
 	createjs.Ticker.setFPS(fps);
-	createjs.Ticker.addEventListener("tick", stage);
+	// createjs.Ticker.addEventListener("tick", stage);
 	createjs.Ticker.addEventListener("tick", tick);
 }
 
 function tick(event) {
-	if (key.isPressed('up') || key.isPressed('w')) {
+	if (key.isPressed('left') || key.isPressed('a')) {
+		player.direction = 'L';
 		player.isIdle = false;
-		player.up(event.delta);
-	} else if (key.isPressed('down') || key.isPressed('s')) {
-		player.isIdle = false;
-		player.down(event.delta);
-	} else if (key.isPressed('left') || key.isPressed('a')) {
-		player.isIdle = false;
+		//keep boundaries
+		if (worldTraveled <= 0) {
+			return;
+		}
 		player.left(event.delta);
+		worldTraveled -= 10;
+		world.regX -= 10;
 	} else if (key.isPressed('right') || key.isPressed('d')) {
+		player.direction = 'R';
 		player.isIdle = false;
 		player.right(event.delta);
+		console.log(worldTraveled);
+		//keep boundaries
+		if (worldTraveled + player.sprite.getBounds().width >= worldWidth) {
+			return;
+		}
+		world.regX += 10;
+		worldTraveled += 10;
 	} else {
 		player.isIdle = true;
 	}
 	if (player.isIdle) {
-		player.gotoAndPlay('idle');
+		player.idle(event);
 	}
 	stage.update(event);
 }
