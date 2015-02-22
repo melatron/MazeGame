@@ -3,6 +3,7 @@
  */
 var Game = (function () {
     function init() {
+    	socket = io.connect();
         stage = new createjs.Stage("game-container");
         fps = 30;
         width = stage.canvas.width;
@@ -31,33 +32,17 @@ var Game = (function () {
         world.x = world.y = 0;
         world.addChild(background);
         stage.addChild(world);
-        var spriteSheet = new createjs.SpriteSheet({
-            framerate: 10,
-            "images": [loader.getResult("char")],
-            "frames": { "regX": 0, "height": 48, "regY": 0, "width": 48 },
-            "animations": {
-                "down": {
-                    "frames" : [0, 4, 8, 12]
-                },
-                "left": {
-                    "frames" : [1, 5, 9, 13]
-                },
-                "up": {
-                    "frames" : [2, 6, 10, 14]
-                },
-                "right": {
-                    "frames" : [3, 7, 11, 15]
-                },
-                "idleL" : 1,
-                "idleR" : 3
-            }
-        });
         
         //initiate the player
-        var sprite = new createjs.Sprite(spriteSheet);
-        sprite.x = 0;
-        sprite.y = height / 2;
+        poolOfPlayers = [];
+        var sprite = createPlayerSprite();
         player = new Player(sprite);
+        var rand = Math.floor(Math.random() * 10);
+        // for (var i = 0; i <= rand; i++) {
+        	// var g = new createjs.Shape().graphics.beginFill("#fff").drawRect(0, 0, 200, 50);
+        	// stage.addChild(g);
+        // }
+        poolOfPlayers.push(player);
         stage.addChild(player.sprite);
         createjs.Ticker.timingMode = createjs.Ticker.RAF;
         createjs.Ticker.setFPS(fps);
@@ -66,6 +51,9 @@ var Game = (function () {
     }
     
     function tick(event) {
+    	if (key.isPressed('b')) {
+    		addPlayer();
+    	}
         if (key.isPressed('left') || key.isPressed('a')) {
             player.direction = 'L';
             player.isIdle = false;
@@ -100,7 +88,49 @@ var Game = (function () {
         }
         stage.update(event);
     }
-
+    
+    function createPlayerSprite() {
+        var spriteSheet = new createjs.SpriteSheet({
+            framerate: 10,
+            "images": [loader.getResult("char")],
+            "frames": { "regX": 0, "height": 48, "regY": 0, "width": 48 },
+            "animations": {
+                "down": {
+                    "frames" : [0, 4, 8, 12]
+                },
+                "left": {
+                    "frames" : [1, 5, 9, 13]
+                },
+                "up": {
+                    "frames" : [2, 6, 10, 14]
+                },
+                "right": {
+                    "frames" : [3, 7, 11, 15]
+                },
+                "idleL" : 1,
+                "idleR" : 3
+            }
+        });
+        
+        var sprite = new createjs.Sprite(spriteSheet);
+        sprite.x = 0;
+        sprite.y = height / 2;
+        
+        return sprite;
+    }
+    
+    function addPlayer(x, y) {
+    	poolOfPlayers.push(player);
+    	var sprite = createPlayerSprite();
+    	sprite.x = x;
+    	sprite.y = y;
+    	var player = new Player(sprite);
+        stage.addChild(player.sprite);
+    }
+    
+    function killPlayer() {
+    	alert('You died!');
+    }
 
     return {
         init: init
@@ -108,9 +138,9 @@ var Game = (function () {
 })();
 
 $(function () {
-    'use strict'
+    'use strict';
     var url = 'http://' + window.location.host;
-    //window.socket = io.connect(url);
+    // window.socket = io.connect(url);
     //debugger;
     window.socket = io.connect(url);
     console.log('on event is set!');
@@ -129,5 +159,15 @@ $(function () {
     socket.on('win', function (params) {
         //console.log(params);
         Game.win();
+    });
+    
+    socket.on('new', function(params) {
+    	var x = params.x || 0;
+    	var y = params.y || height / 2; 
+    	Game.addPlayer();
+    });
+    
+    socket.on('death', function(params) {
+    	Game.killPlayer();
     });
 });
