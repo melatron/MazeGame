@@ -10,7 +10,7 @@ var mongoose = require('mongoose');
 var passport = require('passport');
 
 var server = require('http').createServer(app);
-var io = require('socket.io').listen(server);
+var io;
 var passportSocketIo = require("passport.socketio");
 
 var flash = require('connect-flash');
@@ -20,7 +20,12 @@ var morgan = require('morgan');
 var session = require('express-session');
 var MongoStore = require('connect-mongo')(session);
 
+var sessionStore = new MongoStore({
+        mongooseConnection: mongoose.connection
+    });
+
 var secret = 'ilovescotchscotchyscotchscotch';
+var key = 'mazeGame';
 
 
 var configDB = require('./config/database.js');
@@ -32,7 +37,7 @@ mongoose.connect(configDB.url); // connect to our database
 (function () {
     'use strict';
     // set up our express application
-    app.use(morgan('combined'));
+    //app.use(morgan('combined'));
     app.use(cookieParser()); // read cookies (needed for auth)
     app.use(bodyParser.json());       // to support JSON-encoded bodies
     app.use(bodyParser.urlencoded({
@@ -45,10 +50,12 @@ mongoose.connect(configDB.url); // connect to our database
     // required for passport
     //app.use(express.session({ secret: 'ilovescotchscotchyscotchscotch' })); // session secret
     app.use(session({
+        name: key,
         secret: secret,
         saveUninitialized: false, // don't create session until something stored
         resave: false, //don't save session if unmodified
-        store: new MongoStore({ mongooseConnection: mongoose.connection })
+        rolling: true,
+        store: sessionStore
     }));
     app.use(passport.initialize());
     app.use(passport.session()); // persistent login sessions
@@ -57,14 +64,32 @@ mongoose.connect(configDB.url); // connect to our database
     // routes ======================================================================
     require('./config/passport')(passport); // pass passport for configuration
     require('./app/routes.js')(app, passport); // load our routes and pass in our app and fully configured passport
+    
+    io = require('socket.io')(server);
+
     require('./config/passport.socketio')({
         io: io,
         passportSocketIo: passportSocketIo,
-        sessionStode: MongoStore,
+        sessionStore: sessionStore,
         secret: secret,
-        cookieParser: cookieParser
+        cookieParser: cookieParser,
+        key: key
     });
+    
+    app.use(express.static(__dirname + '/public'));
     // launch ======================================================================
-    app.listen(port);
+    //app.listen(port);
     console.log('The magic happens on port ' + port);
+    
+
+    io.on('connection', function (socket) {
+        console.log(socket.request.user);
+        console.log('Client connected with id: ' + socket.id);
+        //event when a client disconnects from the app
+        socket.on('disconnect', function () {
+            console.log('Client disconnected with id: ' + socket.id);
+        });
+    });
+
+    server.listen(port);
 })();
