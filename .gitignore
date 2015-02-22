@@ -6,3 +6,4 @@ node_modules
 *.prefs
 *.dat
 NodejsApp1.njsproj
+*.suo
