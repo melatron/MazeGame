@@ -1,143 +1,109 @@
-﻿(function () {
-    var lastTime = 0;
-    var vendors = ['ms', 'moz', 'webkit', 'o'];
-    for (var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
-        window.requestAnimationFrame = window[vendors[x] + 'RequestAnimationFrame'];
-        window.cancelAnimationFrame = window[vendors[x] + 'CancelAnimationFrame']
-                                   || window[vendors[x] + 'CancelRequestAnimationFrame'];
+﻿    /**
+ * Created by elitsa.ilieva and antony.dikov on 2/21/2015.
+ */
+var Game = (function () {
+    function init() {
+        stage = new createjs.Stage("game-container");
+        fps = 30;
+        width = stage.canvas.width;
+        height = stage.canvas.height;
+        manifest = [
+            { src: "sea_background.png", id: "background" },
+            { src: "ada_0_0.png", id: "char" }
+        ];
+        loader = new createjs.LoadQueue(false);
+        loader.addEventListener("complete", startGame);
+        loader.loadManifest(manifest, true, "assets/images/");
     }
-
-    if (!window.requestAnimationFrame)
-        window.requestAnimationFrame = function (callback, element) {
-            var currTime = new Date().getTime();
-            var timeToCall = Math.max(0, 16 - (currTime - lastTime));
-            var id = window.setTimeout(function () { callback(currTime + timeToCall); },
-              timeToCall);
-            lastTime = currTime + timeToCall;
-            return id;
-        };
-
-    if (!window.cancelAnimationFrame)
-        window.cancelAnimationFrame = function (id) {
-            clearTimeout(id);
-        };
-}());
-
-var SnakeGame = (function () {
-    'use strict';
-
-    var fps = 50,
-        interval = 1000 / fps,
-        direction = 1,
-        loopObj,
-        canvas = $('#game-plot')[0],
-        context = canvas.getContext('2d');
-
-    function loop() {
-        setTimeout(function () {
-            loopObj = requestAnimationFrame(loop);
-
-            //draw logic here:
-            socket.emit('loop', {
-                direction: direction
-            });
-        }, interval);
-    }
-
-
-
-    function addEvents() {
-        $(document).off('keydown').on('keydown', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            switch (e.keyCode) {
-                case 37:
-                    direction = 0;
-                    console.log('left');
-                    return;
-                case 38:
-                    direction = 1;
-                    console.log('up');
-                    return;
-                case 39:
-                    direction = 2;
-                    console.log('right');
-                    return;
-                case 40:
-                    
-                    direction = 3;
-                    console.log('down');
-                    return;
-                default:
-                    return;
+    
+    function startGame() {
+        //setup background
+        var background = new createjs.Shape();
+        var matrix = new createjs.Matrix2D();
+        worldHeight = height;
+        worldWidth = width * 2;
+        worldTraveled = 0;
+        matrix.scale(2, 2);
+        matrix.translate(0, height / 4);
+        world = new createjs.Container(); //make a container for our panning world view
+        background.graphics.beginFill("#5DD2FF").drawRect(0, 0, worldWidth, worldHeight); //first fill with color
+        background.graphics.beginBitmapFill(loader.getResult("background"), "repeat-x", matrix).drawRect(0, 0, worldWidth, worldHeight);
+        world.x = world.y = 0;
+        world.addChild(background);
+        stage.addChild(world);
+        var spriteSheet = new createjs.SpriteSheet({
+            framerate: 10,
+            "images": [loader.getResult("char")],
+            "frames": { "regX": 0, "height": 48, "regY": 0, "width": 48 },
+            "animations": {
+                "down": {
+                    "frames" : [0, 4, 8, 12]
+                },
+                "left": {
+                    "frames" : [1, 5, 9, 13]
+                },
+                "up": {
+                    "frames" : [2, 6, 10, 14]
+                },
+                "right": {
+                    "frames" : [3, 7, 11, 15]
+                },
+                "idleL" : 1,
+                "idleR" : 3
             }
         });
-
-        function getRandomColor() {
-            var letters = '0123456789ABCDEF'.split('');
-            var color = '#';
-            for (var i = 0; i < 6; i++) {
-                color += letters[Math.floor(Math.random() * 16)];
-            }
-            return color;
-        }
-
-        var colors = [];
-
-        for (var i = 0; i < 100; i++) {
-            colors[i] = getRandomColor();
-        }
-
-        function printPlot(plot) {
-            var row = '';
-            for (var i = 0; i < 30; i++) {
-                for (var j = 0; j < 40; j++) {
-                    row += plot[i][j] + ' ';
-                }
-                console.log(row);
-                row = '';
-            }
-        }
-
-        socket.on('draw', function (data) {
-            printPlot(data);
-            context.fillStyle = "white";
-            context.fillRect(0, 0, 640, 480);
-            for (var i = 0; i < 30; i++) {
-                for (var j = 0; j < 40; j++) {
-                    if (data[i][j] == -1) {
-                        context.fillStyle = 'black';
-                        context.fillRect(j * 16, i * 16, 16, 16);
-                    } else if(data[i][j] != 0){
-                        context.fillStyle = colors[data[i][j]];
-                        context.fillRect(j * 16, i * 16, 16, 16);
-                    }
-                }
-            }
-        });
-
-        socket.on('dead', function () {
-            window.cancelAnimationFrame(loopObj);
-        });
+        
+        //initiate the player
+        var sprite = new createjs.Sprite(spriteSheet);
+        sprite.x = 0;
+        sprite.y = height / 2;
+        player = new Player(sprite);
+        stage.addChild(player.sprite);
+        createjs.Ticker.timingMode = createjs.Ticker.RAF;
+        createjs.Ticker.setFPS(fps);
+        // createjs.Ticker.addEventListener("tick", stage);
+        createjs.Ticker.addEventListener("tick", tick);
     }
+    
+    function tick(event) {
+        if (key.isPressed('left') || key.isPressed('a')) {
+            player.direction = 'L';
+            player.isIdle = false;
+            //keep boundaries
+            if (worldTraveled <= 0) {
+                stage.update(event);
+                return;
+            }
+            player.left(event.delta);
+            worldTraveled -= 10;
+            world.regX -= 10;
+        } else if (key.isPressed('right') || key.isPressed('d')) {
+            player.direction = 'R';
+            player.isIdle = false;
+            player.right(event.delta);
+            //keep boundaries
+            if (worldTraveled + player.sprite.getBounds().width >= worldWidth) {
+                stage.update(event);
+                return;
+            }
+            // if (worldWidth - worldTraveled <= width) {		
+            // stage.update(event);
+            // return;
+            // }
+            world.regX += 10;
+            worldTraveled += 10;
+        } else {
+            player.isIdle = true;
+        }
+        if (player.isIdle) {
+            player.idle(event);
+        }
+        stage.update(event);
+    }
+
 
     return {
-        init: function (options) {
-            //addEvents();
-            //loop();
-            console.log('Game initialized!');
-            fps =  50;
-            interval = 1000 / fps;
-        },
-        draw: function (data) {
-            console.log(data);
-        },
-        die: function () {
-            endGame();
-        },
-        win: function () {
-            winGame();
-        }
+        init: init
     };
 })();
 
@@ -145,11 +111,11 @@ $(function () {
     'use strict'
     var url = 'http://' + window.location.host;
     //window.socket = io.connect(url);
-    debugger;
+    //debugger;
     window.socket = io.connect(url);
     console.log('on event is set!');
     
-    //Game.init();
+    Game.init();
     
     socket.on('draw', function (params) {
         Game.draw(params);

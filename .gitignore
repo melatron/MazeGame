@@ -4,3 +4,5 @@
 node_modules
 *.project
 *.prefs
+*.dat
+NodejsApp1.njsproj
