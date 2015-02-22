@@ -83,12 +83,7 @@ mongoose.connect(configDB.url); // connect to our database
     
 
     io.on('connection', function (socket) {
-        console.log(socket.request.user);
-        console.log('Client connected with id: ' + socket.id);
-        //event when a client disconnects from the app
-        socket.on('disconnect', function () {
-            console.log('Client disconnected with id: ' + socket.id);
-        });
+        require('./app/core/gameEvents')(socket);
     });
 
     server.listen(port);
