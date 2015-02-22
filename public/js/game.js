@@ -160,7 +160,7 @@ $(function () {
     //debugger;
     window.socket = io.connect(url);
     console.log('on event is set!');
-    
+    window.poolOfPlayers = {};
     Game.init();
     
     socket.on('draw', function (params) {
