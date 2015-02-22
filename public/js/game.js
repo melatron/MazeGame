@@ -3,6 +3,8 @@
  */
 var Game = (function () {
     function init() {
+    	var socket = io.connect();
+    	console.log(socket);
         stage = new createjs.Stage("game-container");
         fps = 30;
         width = stage.canvas.width;
@@ -33,7 +35,7 @@ var Game = (function () {
         stage.addChild(world);
         
         //initiate the player
-        poolOfPlayers = [];
+        poolOfPlayers = {};
         var sprite = createPlayerSprite();
         player = new Player(sprite);
         var rand = Math.floor(Math.random() * 10);
@@ -112,14 +114,14 @@ var Game = (function () {
         });
         
         var sprite = new createjs.Sprite(spriteSheet);
-        sprite.x = 0;
+        sprite.x = width / 2;
         sprite.y = height / 2;
         
         return sprite;
     }
     
-    function addPlayer(x, y) {
-    	poolOfPlayers.push(player);
+    function addPlayer(id, x, y) {
+    	poolOfPlayers.id = id;
     	var sprite = createPlayerSprite();
     	sprite.x = x;
     	sprite.y = y;
@@ -130,11 +132,24 @@ var Game = (function () {
     function killPlayer() {
     	alert('You died!');
     }
+    
+    function die() {
+    	window.location =  location.protocol + "//" + location.host;
+    }
+    
+    function update(params) {
+    	params.forEach(function(p) {
+    		poolOfPlayers.id.x = p.x;
+    		poolOfPlayers.id.y = p.y;
+    	});
+    }
 
     return {
         init: init,
         addPlayer : addPlayer,
-        killPlayer : killPlayer
+        killPlayer : killPlayer,
+        die : die,
+        update : update
     };
 })();
 
@@ -170,5 +185,9 @@ $(function () {
     
     socket.on('death', function(params) {
     	Game.killPlayer();
+    });
+    
+    socket.on('update', function(params) {
+    	Game.update(params);
     });
 });
