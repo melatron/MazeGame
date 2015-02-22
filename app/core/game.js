@@ -70,6 +70,7 @@ function tick(event) {
 		player.isIdle = false;
 		//keep boundaries
 		if (worldTraveled <= 0) {
+			stage.update(event);
 			return;
 		}
 		player.left(event.delta);
@@ -79,11 +80,15 @@ function tick(event) {
 		player.direction = 'R';
 		player.isIdle = false;
 		player.right(event.delta);
-		console.log(worldTraveled);
 		//keep boundaries
 		if (worldTraveled + player.sprite.getBounds().width >= worldWidth) {
+			stage.update(event);
 			return;
 		}
+		// if (worldWidth - worldTraveled <= width) {		
+			// stage.update(event);
+			// return;
+		// }
 		world.regX += 10;
 		worldTraveled += 10;
 	} else {
