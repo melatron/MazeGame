@@ -3,7 +3,6 @@
  */
 var Game = (function () {
     function init() {
-    	socket = io.connect();
         stage = new createjs.Stage("game-container");
         fps = 30;
         width = stage.canvas.width;
@@ -133,7 +132,9 @@ var Game = (function () {
     }
 
     return {
-        init: init
+        init: init,
+        addPlayer : addPlayer,
+        killPlayer : killPlayer
     };
 })();
 
